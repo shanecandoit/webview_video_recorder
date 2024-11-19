@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Webcam Recorder</title>
+    <style>
+      #recordButton {
+        background-color: red;
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Webcam Recorder</h1>
+
+    <p><a href="/">Refresh</a></p>
+    
+    <video id="video" width="640" height="480" autoplay></video>
+    <br>
+    <button id="recordButton">Record</button>
+    <br>
+
+    <!-- <form id="uploadForm">
+        <label for="fileInput">Manually upload a video:</label>
+        <input type="file" id="fileInput" name="file">
+        <button type="submit">Upload</button>
+    </form> -->
+
+    <script>
+      const video = document.getElementById("video");
+      const recordButton = document.getElementById("recordButton");
+      let recorder;
+      let isRecording = false;
+
+      navigator.mediaDevices
+          .getUserMedia({ video: true, audio: true })
+          .then(function (stream) {
+              video.srcObject = stream;
+              video.muted = true; // Mute the video element to avoid feedback noise.
+              recorder = new MediaRecorder(stream);
+
+              recorder.ondataavailable = (event) => {
+                  // Handle recorded data (e.g., save to file or send to server)
+                  console.log(event.data);
+
+                  // data
+                  const blob = new Blob([event.data], { type: 'video/webm; codecs="vp9,opus"' });
+                  const url = URL.createObjectURL(blob);
+
+                  // file name
+                  var random_number = Math.floor(Math.random() * 1000000);
+                  var random_string = 'video_' + random_number.toString();
+                  random_string = random_string.replace('.', '') + '.webm';
+                //   console.log(random_string);
+                //   console.log(url);
+
+                  // the form data
+                  const formData = new FormData();
+                  formData.append('file', blob, random_string);
+
+                  // add to UI
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = random_string;
+                  // a.click();
+                  // URL.revokeObjectURL(url); // free up storage--no longer needed.
+
+                  // save the video to disk
+                  const ptag = document.createElement('p');
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.setAttribute('download', random_string);
+                  link.setAttribute('target', '_blank'); // open in new tab
+                  link.innerText = 'Download - ' + random_string; // or display the name of the file
+                  document.body.appendChild(ptag);
+                  ptag.appendChild(link);
+                  link.click();
+                  // document.body.removeChild(link);
+
+                  // upload video to local/
+                  formData.append('file', blob, random_string);
+
+                  fetch('http://localhost:8000', {
+                      method: 'POST',
+                      body: formData
+                  })
+                  .then(response => response.json())
+                  .then(data => {
+                      console.log('Success:', data);
+                  })
+                  .catch((error) => {
+                      console.error('Error:', error);
+                  });
+
+
+              };
+
+              recorder.onerror = (error) => {
+                  console.error("Error recording:", error);
+              };
+          })
+          .catch(function (error) {
+              console.error("Error accessing media devices.", error);
+          });
+
+            recordButton.addEventListener('click', () => {
+                if (isRecording) {
+                    recorder.stop();
+                    recordButton.textContent = 'Record';
+                    recordButton.style.backgroundColor = 'red';
+                } else {
+                    recorder.start();
+                    recordButton.textContent = 'Stop';
+                    recordButton.style.backgroundColor = 'green';
+                }
+                isRecording = !isRecording;
+            });
+
+  </script>
+  </body>
+</html>
